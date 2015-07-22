@@ -1,10 +1,15 @@
-// Copyright 2015 Wenzel Jakob. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+/*
+    path.h -- A simple class for manipulating paths on Linux/Windows/Mac OS
 
-#if !defined(__FILESYSTEM_PATH_H)
-#define __FILESYSTEM_PATH_H
+    Copyright (c) 2015 Wenzel Jakob <wenzel@inf.ethz.ch>
 
+    All rights reserved. Use of this source code is governed by a
+    BSD-style license that can be found in the LICENSE file.
+*/
+
+#pragma once
+
+#include "fwd.h"
 #include <string>
 #include <vector>
 #include <stdexcept>
@@ -25,7 +30,7 @@
 # include <linux/limits.h>
 #endif
 
-namespace filesystem {
+NAMESPACE_BEGIN(filesystem)
 
 /**
  * \brief Simple class for manipulating paths on Linux/Windows/Mac OS
@@ -51,12 +56,10 @@ public:
     path(const path &path)
         : m_type(path.m_type), m_path(path.m_path), m_absolute(path.m_absolute) {}
 
-#if __cplusplus >= 201103L
     path(path &&path)
         : m_type(path.m_type), m_path(std::move(path.m_path)),
           m_absolute(path.m_absolute) {}
-#endif
-    
+
     path(const char *string) { set(string); }
 
     path(const std::string &string) { set(string); }
@@ -66,7 +69,7 @@ public:
     path(const wchar_t *wstring) { set(wstring); }
 #endif
 
-    size_t size() const { return m_path.size(); }
+    size_t length() const { return m_path.size(); }
 
     bool empty() const { return m_path.empty(); }
 
@@ -91,9 +94,22 @@ public:
 #if defined(WIN32)
         return GetFileAttributesW(wstr().c_str()) != INVALID_FILE_ATTRIBUTES;
 #else
-        struct stat sb;   
+        struct stat sb;
         return stat(str().c_str(), &sb) == 0;
 #endif
+    }
+
+    size_t file_size() const {
+#if defined(WIN32)
+        __stat64 sb;
+        if (_wstat64(wstr().c_str(), &sb) != 0)
+            throw std::runtime_error("path::file_size(): cannot stat file \"" + str() + "\"!");
+#else
+        struct stat sb;
+        if (stat(str().c_str(), &sb) != 0)
+            throw std::runtime_error("path::file_size(): cannot stat file \"" + str() + "\"!");
+#endif
+        return (size_t) sb.st_size;
     }
 
     bool is_directory() const {
@@ -103,7 +119,7 @@ public:
             return false;
         return (result & FILE_ATTRIBUTE_DIRECTORY) != 0;
 #else
-        struct stat sb;   
+        struct stat sb;
         if (stat(str().c_str(), &sb))
             return false;
         return S_ISDIR(sb.st_mode);
@@ -117,7 +133,7 @@ public:
             return false;
         return (result & FILE_ATTRIBUTE_NORMAL) != 0;
 #else
-        struct stat sb;   
+        struct stat sb;
         if (stat(str().c_str(), &sb))
             return false;
         return S_ISREG(sb.st_mode);
@@ -182,6 +198,50 @@ public:
         return oss.str();
     }
 
+    void set(const std::string &str, path_type type = native_path) {
+        m_type = type;
+        if (type == windows_path) {
+            m_path = tokenize(str, "/\\");
+            m_absolute = str.size() >= 2 && std::isalpha(str[0]) && str[1] == ':';
+        } else {
+            m_path = tokenize(str, "/");
+            m_absolute = !str.empty() && str[0] == '/';
+        }
+    }
+
+    path &operator=(const path &path) {
+        m_type = path.m_type;
+        m_path = path.m_path;
+        m_absolute = path.m_absolute;
+        return *this;
+    }
+
+    path &operator=(path &&path) {
+        if (this != &path) {
+            m_type = path.m_type;
+            m_path = std::move(path.m_path);
+            m_absolute = path.m_absolute;
+        }
+        return *this;
+    }
+
+    friend std::ostream &operator<<(std::ostream &os, const path &path) {
+        os << path.str();
+        return os;
+    }
+
+    bool remove_file() {
+#if !defined(WIN32)
+        return std::remove(str().c_str()) == 0;
+#else
+        return DeleteFileW(wstr().c_str()) != 0;
+#endif
+    }
+
+    bool resize_file(size_t target_length) {
+        return ::truncate(str().c_str(), (off_t) target_length) == 0;
+    }
+
     static path getcwd() {
 #if !defined(WIN32)
         char temp[PATH_MAX];
@@ -196,45 +256,9 @@ public:
 #endif
     }
 
-    void set(const std::string &str, path_type type = native_path) {
-        m_type = type;
-        if (type == windows_path) {
-            m_path = tokenize(str, "/\\");
-            m_absolute = str.size() >= 2 && std::isalpha(str[0]) && str[1] == ':';
-        } else {
-            m_path = tokenize(str, "/");
-            m_absolute = !str.empty() && str[0] == '/';
-        }
-    }
-
-    path &operator=(const std::string &str) { set(str); return *this; }
-    
-    path &operator=(const path &path) {
-        m_type = path.m_type;
-        m_path = path.m_path;
-        m_absolute = path.m_absolute;
-        return *this;
-    }
-
-#if __cplusplus >= 201103L
-    path &operator=(path &&path) {
-        if (this != &path) {
-            m_type = path.m_type;
-            m_path = std::move(path.m_path);
-            m_absolute = path.m_absolute;
-        }
-        return *this;
-    }
-#endif
-
-    friend std::ostream &operator<<(std::ostream &os, const path &path) {
-        os << path.str();
-        return os;
-    }
-
 #if defined(WIN32)
-    std::wstring wstr() const {
-        std::string temp = str();
+    std::wstring wstr(path_type type = native_path) const {
+        std::string temp = str(type);
         int size = MultiByteToWideChar(CP_UTF8, 0, &temp[0], (int)temp.size(), NULL, 0);
         std::wstring result(size, 0);
         MultiByteToWideChar(CP_UTF8, 0, &temp[0], (int)temp.size(), &result[0], size);
@@ -280,6 +304,4 @@ protected:
     bool m_absolute;
 };
 
-}; /* namespace filesystem */
-
-#endif /* __FILESYSTEM_PATH_H */
+NAMESPACE_END(filesystem)

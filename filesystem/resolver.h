@@ -1,13 +1,17 @@
-// Copyright 2015 Wenzel Jakob. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+/*
+    fresnel.h -- Fresnel coefficients for dielectrics and conductors
 
-#if !defined(__FILESYSTEM_RESOLVER_H)
-#define __FILESYSTEM_RESOLVER_H
+    Copyright (c) 2015 Wenzel Jakob <wenzel@inf.ethz.ch>
+
+    All rights reserved. Use of this source code is governed by a
+    BSD-style license that can be found in the LICENSE file.
+*/
+
+#pragma once
 
 #include "path.h"
 
-namespace filesystem {
+NAMESPACE_BEGIN(filesystem)
 
 /**
  * \brief Simple class for manipulating paths on Linux/Windows/Mac OS
@@ -37,7 +41,8 @@ public:
 
     void prepend(const path &path) { m_paths.insert(m_paths.begin(), path); }
     void append(const path &path) { m_paths.push_back(path); }
-
+    const path &operator[](size_t index) const { return m_paths[index]; }
+    path &operator[](size_t index) { return m_paths[index]; }
 
     path resolve(const path &value) const {
         for (const_iterator it = m_paths.begin(); it != m_paths.end(); ++it) {
@@ -45,13 +50,23 @@ public:
             if (combined.exists())
                 return combined;
         }
-        return path();
+        return value;
+    }
+
+    friend std::ostream &operator<<(std::ostream &os, const resolver &r) {
+        os << "resolver[" << std::endl;
+        for (size_t i = 0; i < r.m_paths.size(); ++i) {
+            os << "  \"" << r.m_paths[i] << "\"";
+            if (i + 1 < r.m_paths.size())
+                os << ",";
+            os << std::endl;
+        }
+        os << "]";
+        return os;
     }
 
 private:
     std::vector<path> m_paths;
 };
 
-}; /* namespace filesystem */
-
-#endif /* __FILESYSTEM_RESOLVER_H */
+NAMESPACE_END(filesystem)
