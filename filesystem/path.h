@@ -22,9 +22,9 @@
 #if defined(WIN32)
 # include <windows.h>
 #else
-# include <sys/stat.h>
 # include <unistd.h>
 #endif
+#include <sys/stat.h>
 
 #if defined(__linux)
 # include <linux/limits.h>
@@ -101,8 +101,8 @@ public:
 
     size_t file_size() const {
 #if defined(WIN32)
-        __stat64 sb;
-        if (_wstat64(wstr().c_str(), &sb) != 0)
+        struct _stati64 sb;
+        if (_wstati64(wstr().c_str(), &sb) != 0)
             throw std::runtime_error("path::file_size(): cannot stat file \"" + str() + "\"!");
 #else
         struct stat sb;
@@ -239,7 +239,25 @@ public:
     }
 
     bool resize_file(size_t target_length) {
+#if !defined(WIN32)
         return ::truncate(str().c_str(), (off_t) target_length) == 0;
+#else
+        HANDLE handle = CreateFileW(wstr().c_str(), GENERIC_WRITE, 0, nullptr, 0, FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (handle == INVALID_HANDLE_VALUE)
+            return false;
+        LARGE_INTEGER size;
+        size.QuadPart = (LONGLONG) target_length;
+        if (SetFilePointerEx(handle, size, NULL, FILE_BEGIN) == 0) {
+            CloseHandle(handle);
+            return false;
+        }
+        if (SetEndOfFile(handle) == 0) {
+            CloseHandle(handle);
+            return false;
+        }
+        CloseHandle(handle);
+        return true;
+#endif
     }
 
     static path getcwd() {
