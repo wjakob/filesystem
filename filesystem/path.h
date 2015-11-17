@@ -128,10 +128,8 @@ public:
 
     bool is_file() const {
 #if defined(WIN32)
-        DWORD result = GetFileAttributesW(wstr().c_str());
-        if (result == INVALID_FILE_ATTRIBUTES)
-            return false;
-        return (result & FILE_ATTRIBUTE_NORMAL) != 0;
+        DWORD attr = GetFileAttributesW(wstr().c_str());
+        return (attr != INVALID_FILE_ATTRIBUTES && (attr & FILE_ATTRIBUTE_DIRECTORY) == 0);
 #else
         struct stat sb;
         if (stat(str().c_str(), &sb))

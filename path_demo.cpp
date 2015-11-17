@@ -25,16 +25,19 @@ int main(int argc, char **argv) {
     cout << "nonexistant:exists = " << path("nonexistant").exists() << endl;
     cout << "nonexistant:is_file = " << path("nonexistant").is_file() << endl;
     cout << "nonexistant:is_directory = " << path("nonexistant").is_directory() << endl;
+    cout << "nonexistant:filename = " << path("nonexistant").filename() << endl;
     cout << "nonexistant:extension = " << path("nonexistant").extension() << endl;
     cout << "filesystem/path.h:exists = " << path("filesystem/path.h").exists() << endl;
     cout << "filesystem/path.h:is_file = " << path("filesystem/path.h").is_file() << endl;
     cout << "filesystem/path.h:is_directory = " << path("filesystem/path.h").is_directory() << endl;
+    cout << "filesystem/path.h:filename = " << path("filesystem/path.h").filename() << endl;
     cout << "filesystem/path.h:extension = " << path("filesystem/path.h").extension() << endl;
     cout << "filesystem/path.h:make_absolute = " << path("filesystem/path.h").make_absolute() << endl;
     cout << "../filesystem:exists = " << path("../filesystem").exists() << endl;
     cout << "../filesystem:is_file = " << path("../filesystem").is_file() << endl;
     cout << "../filesystem:is_directory = " << path("../filesystem").is_directory() << endl;
     cout << "../filesystem:extension = " << path("../filesystem").extension() << endl;
+    cout << "../filesystem:filename = " << path("../filesystem").filename() << endl;
     cout << "../filesystem:make_absolute = " << path("../filesystem").make_absolute() << endl;
 
     cout << "resolve(filesystem/path.h) = " << resolver().resolve("filesystem/path.h") << endl;
