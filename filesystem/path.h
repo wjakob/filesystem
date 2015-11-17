@@ -129,9 +129,7 @@ public:
     bool is_file() const {
 #if defined(WIN32)
         DWORD result = GetFileAttributesW(wstr().c_str());
-        if (result == INVALID_FILE_ATTRIBUTES)
-            return false;
-        return (result & FILE_ATTRIBUTE_NORMAL) != 0;
+        return ((result != INVALID_FILE_ATTRIBUTES) && (result ^ FILE_ATTRIBUTE_DIRECTORY)))
 #else
         struct stat sb;
         if (stat(str().c_str(), &sb))
