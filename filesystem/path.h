@@ -11,7 +11,7 @@
 
 #include "fwd.h"
 #include <string>
-#include <vector>r
+#include <vector>
 #include <stdexcept>
 #include <sstream>
 #include <cctype>
