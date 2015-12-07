@@ -19,7 +19,7 @@
 #include <cerrno>
 #include <cstring>
 
-#if defined(WIN32)
+#if defined(_WIN32)
 # include <windows.h>
 #else
 # include <unistd.h>
@@ -44,7 +44,7 @@ public:
     enum path_type {
         windows_path = 0,
         posix_path = 1,
-#if defined(WIN32)
+#if defined(_WIN32)
         native_path = windows_path
 #else
         native_path = posix_path
@@ -64,7 +64,7 @@ public:
 
     path(const std::string &string) { set(string); }
 
-#if defined(WIN32)
+#if defined(_WIN32)
     path(const std::wstring &wstring) { set(wstring); }
     path(const wchar_t *wstring) { set(wstring); }
 #endif
@@ -76,7 +76,7 @@ public:
     bool is_absolute() const { return m_absolute; }
 
     path make_absolute() const {
-#if !defined(WIN32)
+#if !defined(_WIN32)
         char temp[PATH_MAX];
         if (realpath(str().c_str(), temp) == NULL)
             throw std::runtime_error("Internal error in realpath(): " + std::string(strerror(errno)));
@@ -91,7 +91,7 @@ public:
     }
 
     bool exists() const {
-#if defined(WIN32)
+#if defined(_WIN32)
         return GetFileAttributesW(wstr().c_str()) != INVALID_FILE_ATTRIBUTES;
 #else
         struct stat sb;
@@ -100,7 +100,7 @@ public:
     }
 
     size_t file_size() const {
-#if defined(WIN32)
+#if defined(_WIN32)
         struct _stati64 sb;
         if (_wstati64(wstr().c_str(), &sb) != 0)
             throw std::runtime_error("path::file_size(): cannot stat file \"" + str() + "\"!");
@@ -113,7 +113,7 @@ public:
     }
 
     bool is_directory() const {
-#if defined(WIN32)
+#if defined(_WIN32)
         DWORD result = GetFileAttributesW(wstr().c_str());
         if (result == INVALID_FILE_ATTRIBUTES)
             return false;
@@ -127,7 +127,7 @@ public:
     }
 
     bool is_file() const {
-#if defined(WIN32)
+#if defined(_WIN32)
         DWORD attr = GetFileAttributesW(wstr().c_str());
         return (attr != INVALID_FILE_ATTRIBUTES && (attr & FILE_ATTRIBUTE_DIRECTORY) == 0);
 #else
@@ -234,7 +234,7 @@ public:
     }
 
     bool remove_file() {
-#if !defined(WIN32)
+#if !defined(_WIN32)
         return std::remove(str().c_str()) == 0;
 #else
         return DeleteFileW(wstr().c_str()) != 0;
@@ -242,7 +242,7 @@ public:
     }
 
     bool resize_file(size_t target_length) {
-#if !defined(WIN32)
+#if !defined(_WIN32)
         return ::truncate(str().c_str(), (off_t) target_length) == 0;
 #else
         HANDLE handle = CreateFileW(wstr().c_str(), GENERIC_WRITE, 0, nullptr, 0, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -264,7 +264,7 @@ public:
     }
 
     static path getcwd() {
-#if !defined(WIN32)
+#if !defined(_WIN32)
         char temp[PATH_MAX];
         if (::getcwd(temp, PATH_MAX) == NULL)
             throw std::runtime_error("Internal error in getcwd(): " + std::string(strerror(errno)));
@@ -277,7 +277,7 @@ public:
 #endif
     }
 
-#if defined(WIN32)
+#if defined(_WIN32)
     std::wstring wstr(path_type type = native_path) const {
         std::string temp = str(type);
         int size = MultiByteToWideChar(CP_UTF8, 0, &temp[0], (int)temp.size(), NULL, 0);

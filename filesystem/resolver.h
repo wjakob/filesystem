@@ -1,5 +1,5 @@
 /*
-    fresnel.h -- Fresnel coefficients for dielectrics and conductors
+    resolver.h -- A simple class for cross-platform path resolution
 
     Copyright (c) 2015 Wenzel Jakob <wenzel@inf.ethz.ch>
 
@@ -14,11 +14,11 @@
 NAMESPACE_BEGIN(filesystem)
 
 /**
- * \brief Simple class for manipulating paths on Linux/Windows/Mac OS
+ * \brief Simple class for resolving paths on Linux/Windows/Mac OS
  *
- * This class is just a temporary workaround to avoid the heavy boost
- * dependency until boost::filesystem is integrated into the standard template
- * library at some point in the future.
+ * This convenience class looks for a file or directory given its name
+ * and a set of search paths. The implementation walks through the
+ * search paths in order and stops once the file is found.
  */
 class resolver {
 public:
