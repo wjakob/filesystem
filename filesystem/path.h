@@ -171,7 +171,7 @@ public:
     path operator/(const path &other) const {
         if (other.m_absolute)
             throw std::runtime_error("path::operator/(): expected a relative path!");
-        if (other.m_type != other.m_type)
+        if (m_type != other.m_type)
             throw std::runtime_error("path::operator/(): expected a path of the same type!");
 
         path result(*this);
