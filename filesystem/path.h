@@ -302,6 +302,10 @@ public:
     path &operator=(const std::wstring &str) { set(str); return *this; }
 #endif
 
+    bool operator==(const path &left) const {
+        return left.m_path == this->m_path;
+    }
+
 protected:
     static std::vector<std::string> tokenize(const std::string &string, const std::string &delim) {
         std::string::size_type lastPos = 0, pos = string.find_first_of(delim, lastPos);

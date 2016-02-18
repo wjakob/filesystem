@@ -21,6 +21,8 @@ int main(int argc, char **argv) {
     cout << (path1/path2).parent_path().parent_path().parent_path() << endl;
     cout << (path1/path2).parent_path().parent_path().parent_path().parent_path() << endl;
     cout << path().parent_path() << endl;
+    cout << "some/path.ext:operator==() = " << (path("some/path.ext") == path("some/path.ext")) << endl;
+    cout << "some/path.ext:operator==() (unequal) = " << (path("some/path.ext") == path("another/path.ext")) << endl;
 
     cout << "nonexistant:exists = " << path("nonexistant").exists() << endl;
     cout << "nonexistant:is_file = " << path("nonexistant").is_file() << endl;
