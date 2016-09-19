@@ -159,7 +159,7 @@ public:
     path parent_path() const {
         path result;
         result.m_absolute = m_absolute;
-		result.m_volume = m_volume;
+        result.m_volume = m_volume;
 
         if (m_path.empty()) {
             if (!m_absolute)
@@ -188,18 +188,18 @@ public:
 
     std::string str(path_type type = native_path) const {
         std::ostringstream oss;
-		char slash = m_type == posix_path ? '/' : '\\';
-		
-		if (m_type == windows_path && m_volume != 0)
-			oss << m_volume << ':';
+        char slash = m_type == posix_path ? '/' : '\\';
+        
+        if (m_type == windows_path && m_volume != 0)
+            oss << m_volume << ':';
 
         if (m_absolute)
             oss << slash;
 
-		for (size_t i = 0; i < m_path.size(); ++i) {
+        for (size_t i = 0; i < m_path.size(); ++i) {
             oss << m_path[i];
             if (i+1 < m_path.size()) {
-				oss << slash;
+                oss << slash;
             }
         }
 
@@ -208,20 +208,20 @@ public:
 
     void set(const std::string &str, path_type type = native_path) {
         m_type = type;
-		m_volume = 0;
+        m_volume = 0;
         if (type == windows_path) {
-			if (str.size() >= 2 && std::isalpha(str[0]) && str[1] == ':') {
-				m_volume = str[0];
-				m_path = tokenize(str.substr(2), "/\\");
-				m_absolute = (str.size() >= 3 && (str[2] == '/' || str[2] == '\\'));
-			}
-			else {
-				m_path = tokenize(str, "/\\");
-				m_absolute = false;
-			}
-		}
-		else {
-			m_path = tokenize(str, "/");
+            if (str.size() >= 2 && std::isalpha(str[0]) && str[1] == ':') {
+                m_volume = str[0];
+                m_path = tokenize(str.substr(2), "/\\");
+                m_absolute = (str.size() >= 3 && (str[2] == '/' || str[2] == '\\'));
+            }
+            else {
+                m_path = tokenize(str, "/\\");
+                m_absolute = false;
+            }
+        }
+        else {
+            m_path = tokenize(str, "/");
             m_absolute = !str.empty() && str[0] == '/';
         }
     }
@@ -230,7 +230,7 @@ public:
         m_type = path.m_type;
         m_path = path.m_path;
         m_absolute = path.m_absolute;
-		m_volume = path.m_volume;
+        m_volume = path.m_volume;
         return *this;
     }
 
@@ -240,8 +240,8 @@ public:
             m_type = path.m_type;
             m_path = std::move(path.m_path);
             m_absolute = path.m_absolute;
-			m_volume = path.m_volume;
-		}
+            m_volume = path.m_volume;
+        }
         return *this;
     }
 #endif
@@ -344,7 +344,7 @@ protected:
     path_type m_type;
     std::vector<std::string> m_path;
     bool m_absolute;
-	char m_volume;			// volume letter on windows_path
+    char m_volume;          // volume letter on windows_path
 };
 
 inline bool create_directory(const path& p) {
