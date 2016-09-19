@@ -161,10 +161,7 @@ public:
         result.m_absolute = m_absolute;
         result.m_volume = m_volume;
 
-        if (m_path.empty()) {
-            if (!m_absolute)
-                result.m_path.push_back("..");
-        } else {
+        if (!m_path.empty()) {
             size_t until = m_path.size() - 1;
             for (size_t i = 0; i < until; ++i)
                 result.m_path.push_back(m_path[i]);
