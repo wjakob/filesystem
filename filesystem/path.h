@@ -145,10 +145,15 @@ public:
 
     std::string extension() const {
         const std::string &name = filename();
+        
+        if (name.empty() || name.front() == '.')
+            return "";
+
         size_t pos = name.find_last_of(".");
         if (pos == std::string::npos)
             return "";
-        return name.substr(pos+1);
+
+        return name.substr(pos);    // include "." in extension
     }
 
     std::string filename() const {
