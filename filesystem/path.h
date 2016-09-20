@@ -152,10 +152,21 @@ public:
     }
 
     std::string filename() const {
-        if (empty())
-            return m_ends_slash ? std::string(1, slash()) : "";
-        const std::string &last = m_ends_slash ? "." : m_path[m_path.size() - 1];
-        return last;
+        if (empty()) {
+            std::ostringstream oss;
+         
+            if (m_type == windows_path && m_volume != 0 && !m_absolute)
+                oss << m_volume << ':';
+            
+            if (m_ends_slash)
+                oss << slash();
+            
+            return oss.str();
+        }
+        else {
+            const std::string &last = m_ends_slash ? "." : m_path[m_path.size() - 1];
+            return last;
+        } 
     }
 
     path parent_path() const {
