@@ -154,7 +154,7 @@ public:
     std::string filename() const {
         if (empty())
             return m_ends_slash ? std::string(1, slash()) : "";
-        const std::string &last = m_path[m_path.size()-1];
+        const std::string &last = m_ends_slash ? "." : m_path[m_path.size() - 1];
         return last;
     }
 
@@ -162,11 +162,11 @@ public:
         path result;
         result.m_absolute = m_absolute;
         result.m_starts_slash = m_starts_slash;
-        result.m_ends_slash = m_ends_slash;
+        result.m_ends_slash = false;
         result.m_volume = m_volume;
 
         if (!m_path.empty()) {
-            size_t until = m_path.size() - 1;
+            size_t until = m_ends_slash ? m_path.size() : m_path.size() - 1;
             for (size_t i = 0; i < until; ++i)
                 result.m_path.push_back(m_path[i]);
         }
