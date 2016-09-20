@@ -18,6 +18,7 @@
 #include <cstdlib>
 #include <cerrno>
 #include <cstring>
+#include <climits>
 
 #if defined(_WIN32)
 # include <windows.h>
@@ -51,14 +52,18 @@ public:
 #endif
     };
 
-    path() : m_type(native_path), m_absolute(false) { }
+    path() : m_type(native_path), m_absolute(false), 
+             m_starts_slash(false), m_ends_slash(false), m_volume(0) { }
 
     path(const path &path)
-        : m_type(path.m_type), m_path(path.m_path), m_absolute(path.m_absolute) {}
+        : m_type(path.m_type), m_path(path.m_path), m_absolute(path.m_absolute), 
+          m_starts_slash(path.m_starts_slash), m_ends_slash(path.m_ends_slash), m_volume(path.m_volume) {}
 
+#if __cplusplus >= 201103L
     path(path &&path)
-        : m_type(path.m_type), m_path(std::move(path.m_path)),
-          m_absolute(path.m_absolute) {}
+        : m_type(path.m_type), m_path(std::move(path.m_path)), m_absolute(path.m_absolute), 
+          m_starts_slash(path.m_starts_slash), m_ends_slash(path.m_ends_slash), m_volume(path.m_volume) {}
+#endif
 
     path(const char *string) { set(string); }
 
@@ -140,28 +145,44 @@ public:
 
     std::string extension() const {
         const std::string &name = filename();
+        
+        if (name.empty() || name.front() == '.')
+            return "";
+
         size_t pos = name.find_last_of(".");
         if (pos == std::string::npos)
             return "";
-        return name.substr(pos+1);
+
+        return name.substr(pos);    // include "." in extension
     }
 
     std::string filename() const {
-        if (empty())
-            return "";
-        const std::string &last = m_path[m_path.size()-1];
-        return last;
+        if (empty()) {
+            std::ostringstream oss;
+         
+            if (m_type == windows_path && m_volume != 0 && !m_absolute)
+                oss << m_volume << ':';
+            
+            if (m_ends_slash)
+                oss << slash();
+            
+            return oss.str();
+        }
+        else {
+            const std::string &last = m_ends_slash ? "." : m_path[m_path.size() - 1];
+            return last;
+        } 
     }
 
     path parent_path() const {
         path result;
         result.m_absolute = m_absolute;
+        result.m_starts_slash = m_starts_slash;
+        result.m_ends_slash = false;
+        result.m_volume = m_volume;
 
-        if (m_path.empty()) {
-            if (!m_absolute)
-                result.m_path.push_back("..");
-        } else {
-            size_t until = m_path.size() - 1;
+        if (!m_path.empty()) {
+            size_t until = m_ends_slash ? m_path.size() : m_path.size() - 1;
             for (size_t i = 0; i < until; ++i)
                 result.m_path.push_back(m_path[i]);
         }
@@ -175,6 +196,7 @@ public:
             throw std::runtime_error("path::operator/(): expected a path of the same type!");
 
         path result(*this);
+        result.m_ends_slash = other.m_ends_slash;
 
         for (size_t i=0; i<other.m_path.size(); ++i)
             result.m_path.push_back(other.m_path[i]);
@@ -184,31 +206,53 @@ public:
 
     std::string str(path_type type = native_path) const {
         std::ostringstream oss;
+        bool ends_slash = false;
 
-        if (m_type == posix_path && m_absolute)
-            oss << "/";
+        if (m_type == windows_path && m_volume != 0)
+            oss << m_volume << ':';
 
-        for (size_t i=0; i<m_path.size(); ++i) {
+        if (m_absolute || m_starts_slash) {
+            oss << slash();
+            ends_slash = true;
+        }
+
+        for (size_t i = 0; i < m_path.size(); ++i) {
             oss << m_path[i];
+            ends_slash = false;
             if (i+1 < m_path.size()) {
-                if (type == posix_path)
-                    oss << '/';
-                else
-                    oss << '\\';
+                oss << slash();
+                ends_slash = true;
             }
         }
+
+        if (m_ends_slash && !ends_slash)
+            oss << slash();
 
         return oss.str();
     }
 
     void set(const std::string &str, path_type type = native_path) {
         m_type = type;
+        m_volume = 0;
         if (type == windows_path) {
-            m_path = tokenize(str, "/\\");
-            m_absolute = str.size() >= 2 && std::isalpha(str[0]) && str[1] == ':';
-        } else {
+            if (str.size() >= 2 && std::isalpha(str[0]) && str[1] == ':') {
+                m_volume = str[0];
+                m_path = tokenize(str.substr(2), "/\\");
+                m_absolute = str.size() >= 3 && (str[2] == '/' || str[2] == '\\');
+                m_starts_slash = m_absolute;
+            }
+            else {
+                m_path = tokenize(str, "/\\");
+                m_absolute = false;
+                m_starts_slash = !str.empty() && (str.front() == '/' || str.front() == '\\');
+            }
+            m_ends_slash = !str.empty() && (str.back() == '/' || str.back() == '\\');
+        }
+        else {
             m_path = tokenize(str, "/");
-            m_absolute = !str.empty() && str[0] == '/';
+            m_absolute = !str.empty() && str.front() == '/';
+            m_starts_slash = m_absolute;
+            m_ends_slash = !str.empty() && str.back() == '/';
         }
     }
 
@@ -216,17 +260,25 @@ public:
         m_type = path.m_type;
         m_path = path.m_path;
         m_absolute = path.m_absolute;
+        m_starts_slash = path.m_starts_slash;
+        m_ends_slash = path.m_ends_slash;
+        m_volume = path.m_volume;
         return *this;
     }
 
+#if __cplusplus >= 201103L
     path &operator=(path &&path) {
         if (this != &path) {
             m_type = path.m_type;
             m_path = std::move(path.m_path);
             m_absolute = path.m_absolute;
+            m_starts_slash = path.m_starts_slash;
+            m_ends_slash = path.m_ends_slash;
+            m_volume = path.m_volume;
         }
         return *this;
     }
+#endif
 
     friend std::ostream &operator<<(std::ostream &os, const path &path) {
         os << path.str();
@@ -310,22 +362,29 @@ protected:
         std::string::size_type lastPos = 0, pos = string.find_first_of(delim, lastPos);
         std::vector<std::string> tokens;
 
-        while (lastPos != std::string::npos) {
-            if (pos != lastPos)
-                tokens.push_back(string.substr(lastPos, pos - lastPos));
-            lastPos = pos;
-            if (lastPos == std::string::npos || lastPos + 1 == string.length())
-                break;
-            pos = string.find_first_of(delim, ++lastPos);
+        if (!string.empty()) {
+            while (lastPos != std::string::npos) {
+                if (pos != lastPos)
+                    tokens.push_back(string.substr(lastPos, pos - lastPos));
+                lastPos = pos;
+                if (lastPos == std::string::npos || lastPos + 1 == string.length())
+                    break;
+                pos = string.find_first_of(delim, ++lastPos);
+            }
         }
 
         return tokens;
     }
 
+    char slash() const { return m_type == posix_path ? '/' : '\\'; }
+
 protected:
     path_type m_type;
     std::vector<std::string> m_path;
     bool m_absolute;
+    bool m_starts_slash;    // path starts with '/'
+    bool m_ends_slash;      // path ends with '/'
+    char m_volume;          // volume letter on windows_path
 };
 
 inline bool create_directory(const path& p) {
