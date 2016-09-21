@@ -1,5 +1,3 @@
-#undef __STRICT_ANSI__  // temporary until fix_cygwin is merged
-#include <climits>      // temporary until fix_cygwin is merged
 #include <iostream>
 #include "filesystem/path.h"
 #include "filesystem/resolver.h"
