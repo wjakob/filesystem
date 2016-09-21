@@ -53,15 +53,23 @@ public:
 #endif
     };
 
-    path() : m_type(native_path), m_absolute(false) { }
+    path()
+        : m_type(native_path)
+        , m_absolute(false)
+    {}
 
     path(const path &path)
-        : m_type(path.m_type), m_path(path.m_path), m_absolute(path.m_absolute) {}
+        : m_type(path.m_type)
+        , m_path(path.m_path)
+        , m_absolute(path.m_absolute)
+    {}
 
 #if __cplusplus >= 201103L
     path(path &&path)
-        : m_type(path.m_type), m_path(std::move(path.m_path)),
-          m_absolute(path.m_absolute) {}
+        : m_type(path.m_type)
+        , m_path(std::move(path.m_path))
+        , m_absolute(path.m_absolute)
+    {}
 #endif
 
     path(const char *string) { set(string); }
