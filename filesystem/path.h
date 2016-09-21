@@ -18,6 +18,7 @@
 #include <cstdlib>
 #include <cerrno>
 #include <cstring>
+#include <climits>
 
 #if defined(_WIN32)
 # include <windows.h>
