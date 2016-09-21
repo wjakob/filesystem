@@ -19,6 +19,7 @@
 #include <cerrno>
 #include <cstring>
 #include <climits>
+#include <cstdio>
 
 #if defined(_WIN32)
 # include <windows.h>
@@ -57,9 +58,11 @@ public:
     path(const path &path)
         : m_type(path.m_type), m_path(path.m_path), m_absolute(path.m_absolute) {}
 
+#if __cplusplus >= 201103L
     path(path &&path)
         : m_type(path.m_type), m_path(std::move(path.m_path)),
           m_absolute(path.m_absolute) {}
+#endif
 
     path(const char *string) { set(string); }
 
@@ -220,6 +223,7 @@ public:
         return *this;
     }
 
+#if __cplusplus >= 201103L
     path &operator=(path &&path) {
         if (this != &path) {
             m_type = path.m_type;
@@ -228,6 +232,7 @@ public:
         }
         return *this;
     }
+#endif
 
     friend std::ostream &operator<<(std::ostream &os, const path &path) {
         os << path.str();
