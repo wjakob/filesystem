@@ -44,6 +44,54 @@ int test_nr = 0;
 #endif
 
 int main(int argc, char **argv) {
+    path p1, p2;
+
+    // operator==, operator!=
+#if defined(_WIN32)
+    p1 = path("c:foo/bar");
+    p2 = path("c:\\foo/bar");
+    OK(p1 != p2);
+
+    p1 = path("c:foo/bar");
+    p2 = path("c:foo\\bar/");
+    OK(p1 != p2);
+
+    p1 = path("c:foo/bar");
+    p2 = path("c:foo\\/bar");
+    OK(p1 == p2);
+
+    p1 = path("c:/foo/bar");
+    p2 = path("c:/\\foo/bar");
+    OK(p1 == p2);
+
+    p1 = path("c:foo/bar/");
+    p2 = path("c:foo\\bar//");
+    OK(p1 == p2);
+#endif
+
+#if 0
+    p1 = path("foo/bar");
+    p2 = path("/foo/bar");
+    OK(p1 != p2); 
+#endif
+
+    p1 = path("foo/bar");
+    p2 = path("foo/bar/");
+    OK(p1 != p2);
+
+    p1 = path("foo/bar");
+    p2 = path("foo//bar");
+    OK(p1 == p2);
+
+    p1 = path("/foo/bar");
+    p2 = path("//foo/bar");
+    OK(p1 == p2);
+
+    p1 = path("foo/bar/");
+    p2 = path("foo/bar//");
+    OK(p1 == p2);
+
+#if 0
     path path1(ROOT "dir 1" SEP "dir 2" SEP);
     path path2("dir 3");
     path p;
@@ -414,6 +462,8 @@ int main(int argc, char **argv) {
     // resolve
     IS(resolver().resolve("filesystem/path.h"), path("filesystem/path.h").make_absolute());
     IS(resolver().resolve("nonexistant"), "nonexistant");
+
+#endif
 
     DONE_TESTING();
 }

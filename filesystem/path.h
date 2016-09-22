@@ -316,23 +316,29 @@ public:
     path &operator=(const std::wstring &str) { set(str); return *this; }
 #endif
 
-    bool operator==(const path &p) const { return p.m_path == m_path; }
-    bool operator!=(const path &p) const { return p.m_path != m_path; }
+    bool operator==(const path &p) const { return p.m_absolute == m_absolute && p.m_path == m_path; }
+    bool operator!=(const path &p) const { return p.m_absolute != m_absolute || p.m_path != m_path; }
 
 protected:
     static std::vector<std::string> tokenize(const std::string &string, const std::string &delim) {
-        std::string::size_type lastPos = 0, pos = string.find_first_of(delim, lastPos);
+        size_t p0 = 0;
+        size_t p1 = string.find_first_of(delim);
         std::vector<std::string> tokens;
 
-        while (lastPos != std::string::npos) {
-            if (pos != lastPos)
-                tokens.push_back(string.substr(lastPos, pos - lastPos));
-            lastPos = pos;
-            if (lastPos == std::string::npos || lastPos + 1 == string.length())
-                break;
-            pos = string.find_first_of(delim, ++lastPos);
+        if (p1 == std::string::npos)
+            tokens.push_back(string);           // no delimiters, only one element
+        else {
+            for (;;) {
+                if (p0 != p1)
+                    tokens.push_back(string.substr(p0, p1 - p0));
+                p0 = p1;
+                p1 = string.find_first_of(delim, ++p0);
+                if (p1 == std::string::npos) {
+                    tokens.push_back(string.substr(p0, string.size() - p0));
+                    break;
+                }
+            }
         }
-
         return tokens;
     }
 
