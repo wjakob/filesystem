@@ -21,6 +21,7 @@
 
 #if defined(_WIN32)
 # include <windows.h>
+# include <ShlObj.h>
 #else
 # include <unistd.h>
 #endif
@@ -238,6 +239,15 @@ public:
         return std::remove(str().c_str()) == 0;
 #else
         return DeleteFileW(wstr().c_str()) != 0;
+#endif
+    }
+    
+    bool create_directory() {
+#if defined(WIN32)
+        return SHCreateDirectory(nullptr, make_absolute().wstr().c_str()) == ERROR_SUCCESS;
+#else
+        // Not implemented yet
+        return false;
 #endif
     }
 
