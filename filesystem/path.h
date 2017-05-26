@@ -353,7 +353,7 @@ inline bool create_directories(const path& p) {
         else
             return false;
     }
-    return true;
+    return false;
 #endif
 }
 
