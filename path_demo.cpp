@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
     {
         cout << "nonexistant:file_size = " << path("nonexistant").file_size() << endl;
     }
-    catch(std::runtime_error e)
+    catch(std::exception &e)
     {
         cout << "<file does not exist>" << endl;
     }
@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
     {
         cout << "filesystem/path.h:file_size = " << path("filesystem/path.h").file_size() << endl;
     }
-    catch(std::runtime_error e)
+    catch(std::exception &e)
     {
         cout << "<file does not exist>" << endl;
     }
@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
     {
         cout << "../filesystem:file_size = " << path("../filesystem").file_size() << endl;
     }
-    catch(std::runtime_error e)
+    catch(std::exception &e)
     {
         cout << "<file does not exist>" << endl;
     }
