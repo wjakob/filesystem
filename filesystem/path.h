@@ -78,8 +78,23 @@ public:
     path make_absolute() const {
 #if !defined(_WIN32)
         char temp[PATH_MAX];
-        if (realpath(str().c_str(), temp) == NULL)
-            throw std::runtime_error("Internal error in realpath(): " + std::string(strerror(errno)));
+        #if defined(__APPLE__)
+            // OSX *STILL* does not provide `realpath`, just use python
+            FILE *py_ret;
+            std::string py_code = "python -c 'import os; import sys;"
+                                  "sys.stdout.write("
+                                      "os.path.abspath(\"" + str() +
+                                  "\"))'";
+            py_ret = popen(py_code.c_str(), "r");
+            if (!py_ret)
+                throw std::runtime_error("Could not obtain OSX absolute path using python: " + std::string(strerror(errno)));
+            // read in the buffer
+            while (fgets(temp, sizeof(temp), py_ret) != NULL) { }
+            pclose(py_ret);
+        #else
+            if (realpath(str().c_str(), temp) == NULL)
+                throw std::runtime_error("Internal error in realpath(): " + std::string(strerror(errno)));
+        #endif // __APPLE__
         return path(temp);
 #else
         std::wstring value = wstr(), out(MAX_PATH, '\0');
