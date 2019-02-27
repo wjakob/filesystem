@@ -21,6 +21,7 @@
 
 #if defined(_WIN32)
 # include <windows.h>
+# include <ShlObj.h>
 #else
 # include <unistd.h>
 #endif
@@ -358,7 +359,27 @@ inline bool create_directory(const path& p) {
 #if defined(_WIN32)
     return CreateDirectoryW(p.wstr().c_str(), NULL) != 0;
 #else
-    return mkdir(p.str().c_str(), S_IRUSR | S_IWUSR | S_IXUSR) == 0;
+    return mkdir(p.str().c_str(), S_IRWXU) == 0;
+#endif
+}
+
+inline bool create_directories(const path& p) {
+#if defined(_WIN32)
+    return SHCreateDirectory(nullptr, make_absolute().wstr().c_str()) == ERROR_SUCCESS;
+#else
+    if (create_directory(p.str().c_str()))
+        return true;
+  
+    if (p.empty())
+        return false;
+    
+    if (errno == ENOENT) {
+        if (create_directory(p.parent_path()))
+            return mkdir(p.str().c_str(), S_IRWXU) == 0;
+        else
+            return false;
+    }
+    return false;
 #endif
 }
 
