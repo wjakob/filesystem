@@ -367,7 +367,7 @@ inline bool create_directory(const path& p) {
 
 inline bool create_directories(const path& p) {
 #if defined(_WIN32)
-    return SHCreateDirectory(nullptr, make_absolute().wstr().c_str()) == ERROR_SUCCESS;
+    return SHCreateDirectory(nullptr, p.make_absolute().wstr().c_str()) == ERROR_SUCCESS;
 #else
     if (create_directory(p.str().c_str()))
         return true;
