@@ -82,8 +82,8 @@ public:
             throw std::runtime_error("Internal error in realpath(): " + std::string(strerror(errno)));
         return path(temp);
 #else
-        std::wstring value = wstr(), out(MAX_PATH, '\0');
-        DWORD length = GetFullPathNameW(value.c_str(), MAX_PATH, &out[0], NULL);
+        std::wstring value = wstr(), out(MAX_PATH_WINDOWS, '\0');
+        DWORD length = GetFullPathNameW(value.c_str(), MAX_PATH_WINDOWS, &out[0], NULL);
         if (length == 0)
             throw std::runtime_error("Internal error in realpath(): " + std::to_string(GetLastError()));
         return path(out.substr(0, length));
@@ -185,8 +185,21 @@ public:
     std::string str(path_type type = native_path) const {
         std::ostringstream oss;
 
-        if (m_type == posix_path && m_absolute)
-            oss << "/";
+        if (m_absolute) {
+            if (m_type == posix_path)
+                oss << "/";
+            else {
+                size_t length = 0;
+                for (size_t i = 0; i < m_path.size(); ++i)
+                    // No special case for the last segment to count the NULL character
+                    length += m_path[i].length() + 1;
+                // Windows requires a \\?\ prefix to handle paths longer than MAX_PATH
+                // (including their null character). NOTE: relative paths >MAX_PATH are
+                // not supported at all in Windows.
+                if (length > MAX_PATH)
+                    oss << "\\\\?\\";
+            }
+        }
 
         for (size_t i=0; i<m_path.size(); ++i) {
             oss << m_path[i];
@@ -204,8 +217,18 @@ public:
     void set(const std::string &str, path_type type = native_path) {
         m_type = type;
         if (type == windows_path) {
-            m_path = tokenize(str, "/\\");
-            m_absolute = str.size() >= 2 && std::isalpha(str[0]) && str[1] == ':';
+            std::string tmp = str;
+
+            // Long windows paths (sometimes) begin with the prefix \\?\. It should only
+            // be used when the path is >MAX_PATH characters long, so we remove it
+            // for convenience and add it back (if necessary) in str()/wstr().
+            static const std::string PREFIX = "\\\\?\\";
+            if (tmp.length() >= PREFIX.length()
+             && std::mismatch(std::begin(PREFIX), std::end(PREFIX), std::begin(tmp)).first == std::end(PREFIX)) {
+                tmp.erase(0, 4);
+            }
+            m_path = tokenize(tmp, "/\\");
+            m_absolute = tmp.size() >= 2 && std::isalpha(tmp[0]) && tmp[1] == ':';
         } else {
             m_path = tokenize(str, "/");
             m_absolute = !str.empty() && str[0] == '/';
@@ -270,8 +293,8 @@ public:
             throw std::runtime_error("Internal error in getcwd(): " + std::string(strerror(errno)));
         return path(temp);
 #else
-        std::wstring temp(MAX_PATH, '\0');
-        if (!_wgetcwd(&temp[0], MAX_PATH))
+        std::wstring temp(MAX_PATH_WINDOWS, '\0');
+        if (!_wgetcwd(&temp[0], MAX_PATH_WINDOWS))
             throw std::runtime_error("Internal error in getcwd(): " + std::to_string(GetLastError()));
         return path(temp.c_str());
 #endif
@@ -323,6 +346,9 @@ protected:
     }
 
 protected:
+#if defined(_WIN32)
+    static const size_t MAX_PATH_WINDOWS = 32767;
+#endif
     path_type m_type;
     std::vector<std::string> m_path;
     bool m_absolute;
