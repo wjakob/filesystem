@@ -10,6 +10,7 @@
 #pragma once
 
 #include "fwd.h"
+#include <algorithm>
 #include <string>
 #include <vector>
 #include <stdexcept>
@@ -197,7 +198,7 @@ public:
                 // Windows requires a \\?\ prefix to handle paths longer than MAX_PATH
                 // (including their null character). NOTE: relative paths >MAX_PATH are
                 // not supported at all in Windows.
-                if (length > MAX_PATH)
+                if (length > MAX_PATH_WINDOWS_LEGACY)
                     oss << "\\\\?\\";
             }
         }
@@ -350,6 +351,7 @@ protected:
 #if defined(_WIN32)
     static const size_t MAX_PATH_WINDOWS = 32767;
 #endif
+    static const size_t MAX_PATH_WINDOWS_LEGACY = 260;
     path_type m_type;
     std::vector<std::string> m_path;
     bool m_absolute;
@@ -365,7 +367,7 @@ inline bool create_directory(const path& p) {
 
 inline bool create_directories(const path& p) {
 #if defined(_WIN32)
-    return SHCreateDirectory(nullptr, make_absolute().wstr().c_str()) == ERROR_SUCCESS;
+    return SHCreateDirectory(nullptr, p.make_absolute().wstr().c_str()) == ERROR_SUCCESS;
 #else
     if (create_directory(p.str().c_str()))
         return true;
