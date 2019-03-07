@@ -194,11 +194,14 @@ public:
                 for (size_t i = 0; i < m_path.size(); ++i)
                     // No special case for the last segment to count the NULL character
                     length += m_path[i].length() + 1;
+
+#if defined(_WIN32)
                 // Windows requires a \\?\ prefix to handle paths longer than MAX_PATH
                 // (including their null character). NOTE: relative paths >MAX_PATH are
                 // not supported at all in Windows.
                 if (length > MAX_PATH)
                     oss << "\\\\?\\";
+#endif
             }
         }
 
