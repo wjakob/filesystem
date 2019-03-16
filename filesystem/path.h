@@ -10,6 +10,7 @@
 #pragma once
 
 #include "fwd.h"
+#include "std_to_string.h"
 #include <algorithm>
 #include <string>
 #include <vector>
