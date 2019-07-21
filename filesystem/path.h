@@ -23,6 +23,7 @@
 #if defined(_WIN32)
 # include <windows.h>
 # include <ShlObj.h>
+# include <direct.h>
 #else
 # include <unistd.h>
 #endif
@@ -369,20 +370,42 @@ inline bool create_directories(const path& p) {
 #if defined(_WIN32)
     return SHCreateDirectory(nullptr, p.make_absolute().wstr().c_str()) == ERROR_SUCCESS;
 #else
-    if (create_directory(p.str().c_str()))
-        return true;
-  
     if (p.empty())
         return false;
     
-    if (errno == ENOENT) {
-        if (create_directory(p.parent_path()))
-            return mkdir(p.str().c_str(), S_IRWXU) == 0;
-        else
-            return false;
+    if (create_directory(p.str().c_str()))
+        return true;
+    else {
+        if (errno == EEXIST)
+            return true;
+
+        if (create_directories(p.parent_path()))
+            return create_directory(p.str().c_str());
     }
+
     return false;
 #endif
+}
+
+inline bool remove_directory(const path& p) {
+#if defined (_WIN32)
+    return _wrmdir(p.str().c_str()) == 0;
+#else
+    return rmdir(p.str().c_str()) == 0;
+#endif
+}
+
+inline bool remove_directories(const path& p) {
+    if (p.is_absolute())
+        return false;
+
+    if (p.empty())
+        return true;
+
+    if (remove_directory(p))
+        return remove_directories(p.parent_path());
+    else
+        return false;
 }
 
 NAMESPACE_END(filesystem)
