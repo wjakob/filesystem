@@ -1,6 +1,7 @@
 #include <iostream>
 #include "filesystem/path.h"
 #include "filesystem/resolver.h"
+#include "filesystem/directory.h"
 
 using namespace std;
 using namespace filesystem;
@@ -44,5 +45,35 @@ int main(int argc, char **argv) {
 
     cout << "resolve(filesystem/path.h) = " << resolver().resolve("filesystem/path.h") << endl;
     cout << "resolve(nonexistant) = " << resolver().resolve("nonexistant") << endl;
+
+    //////////////////////////////////////////////////////////////////////////
+    directory dir1(".");
+    directory dir2("..");
+    if (dir1 == dir2)
+    {
+        cout << "dir1:" << dir1 << " equal to dir2:" << dir2 << endl;
+    }
+    else
+    {
+        cout << "dir1:" << dir1 << " not equal to dir2:" << dir2 << endl;
+    }
+
+    directory::iterator begin(dir1);
+    directory::iterator end;
+    for (; begin != end; ++begin)
+    {
+        cout << *begin << endl;
+    }
+
+    directory::iterator b = dir2.begin();
+    directory::iterator e = dir2.end();
+    for (; b != e; ++b)
+    {
+        if (b->is_file())
+        {
+            cout << *b << endl;
+        }
+    }
+
     return 0;
 }
