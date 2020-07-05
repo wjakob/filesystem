@@ -239,12 +239,20 @@ public:
                 tmp.erase(0, LONG_PATH_PREFIX.length());
             }
 
-            // Special-case handling of absolute SMB paths, which start with the prefix "\\"
+            // Special-case handling of absolute SMB paths, which start with the prefix "\\".
             if (tmp.length() >= 2 && tmp[0] == '\\' && tmp[1] == '\\') {
                 m_path = {};
                 tmp.erase(0, 2);
-                m_absolute = true;
-                m_smb = true;
+
+                // Interestingly, there is a special-special case where relative paths may be specified as beginning with a "\\"
+                // when a non-SMB file with a more-than-260-characters-long absolute _local_ path is double-clicked. This seems to
+                // only happen with single-segment relative paths, so we can check for this condition by making sure no further
+                // path separators are present.
+                if (tmp.find_first_of("/\\") != std::string::npos)
+                    m_absolute = m_smb = true;
+                else
+                    m_absolute = m_smb = false;
+
             // Special-case handling of absolute SMB paths, which start with the prefix "UNC\"
             } else if (tmp.length() >= 4 && tmp[0] == 'U' && tmp[1] == 'N' && tmp[2] == 'C' && tmp[3] == '\\') {
                 m_path = {};
