@@ -53,14 +53,14 @@ public:
 #endif
     };
 
-    path() : m_type(native_path), m_absolute(false) { }
+    path() : m_type(native_path), m_absolute(false), m_smb(false) { }
 
     path(const path &path)
-        : m_type(path.m_type), m_path(path.m_path), m_absolute(path.m_absolute) {}
+        : m_type(path.m_type), m_path(path.m_path), m_absolute(path.m_absolute), m_smb(path.m_smb) {}
 
     path(path &&path)
         : m_type(path.m_type), m_path(std::move(path.m_path)),
-          m_absolute(path.m_absolute) {}
+          m_absolute(path.m_absolute), m_smb(path.m_smb) {}
 
     path(const char *string) { set(string); }
 
@@ -158,6 +158,7 @@ public:
     path parent_path() const {
         path result;
         result.m_absolute = m_absolute;
+        result.m_smb = m_smb;
 
         if (m_path.empty()) {
             if (!m_absolute)
@@ -195,11 +196,19 @@ public:
                 for (size_t i = 0; i < m_path.size(); ++i)
                     // No special case for the last segment to count the NULL character
                     length += m_path[i].length() + 1;
+                if (m_smb)
+                    length += 2;
+
                 // Windows requires a \\?\ prefix to handle paths longer than MAX_PATH
                 // (including their null character). NOTE: relative paths >MAX_PATH are
                 // not supported at all in Windows.
-                if (length > MAX_PATH_WINDOWS_LEGACY)
-                    oss << "\\\\?\\";
+                if (length > MAX_PATH_WINDOWS_LEGACY) {
+                    if (m_smb)
+                        oss << "\\\\?\\UNC\\";
+                    else
+                        oss << "\\\\?\\";
+                } else if (m_smb)
+                    oss << "\\\\";
             }
         }
 
@@ -224,13 +233,39 @@ public:
             // Long windows paths (sometimes) begin with the prefix \\?\. It should only
             // be used when the path is >MAX_PATH characters long, so we remove it
             // for convenience and add it back (if necessary) in str()/wstr().
-            static const std::string PREFIX = "\\\\?\\";
-            if (tmp.length() >= PREFIX.length()
-             && std::mismatch(std::begin(PREFIX), std::end(PREFIX), std::begin(tmp)).first == std::end(PREFIX)) {
-                tmp.erase(0, 4);
+            static const std::string LONG_PATH_PREFIX = "\\\\?\\";
+            if (tmp.length() >= LONG_PATH_PREFIX.length()
+             && std::mismatch(std::begin(LONG_PATH_PREFIX), std::end(LONG_PATH_PREFIX), std::begin(tmp)).first == std::end(LONG_PATH_PREFIX)) {
+                tmp.erase(0, LONG_PATH_PREFIX.length());
             }
-            m_path = tokenize(tmp, "/\\");
-            m_absolute = tmp.size() >= 2 && std::isalpha(tmp[0]) && tmp[1] == ':';
+
+            // Special-case handling of absolute SMB paths, which start with the prefix "\\"
+            if (tmp.length() >= 2 && tmp[0] == '\\' && tmp[1] == '\\') {
+                m_path = {};
+                tmp.erase(0, 2);
+                m_absolute = true;
+                m_smb = true;
+            // Special-case handling of absolute SMB paths, which start with the prefix "UNC\"
+            } else if (tmp.length() >= 4 && tmp[0] == 'U' && tmp[1] == 'N' && tmp[2] == 'C' && tmp[3] == '\\') {
+                m_path = {};
+                tmp.erase(0, 4);
+                m_absolute = true;
+                m_smb = true;
+            // Special-case handling of absolute local paths, which start with the drive letter and a colon "X:\"
+            } else if (tmp.length() >= 3 && std::isalpha(tmp[0]) && tmp[1] == ':' && (tmp[2] == '\\' || tmp[2] == '/')) {
+                m_path = {tmp.substr(0, 2)};
+                tmp.erase(0, 3);
+                m_absolute = true;
+                m_smb = false;
+            // Relative path
+            } else {
+                m_path = {};
+                m_absolute = false;
+                m_smb = false;
+            }
+
+            std::vector<std::string> tokenized = tokenize(tmp, "/\\");
+            m_path.insert(std::end(m_path), std::begin(tokenized), std::end(tokenized));
         } else {
             m_path = tokenize(str, "/");
             m_absolute = !str.empty() && str[0] == '/';
@@ -241,6 +276,7 @@ public:
         m_type = path.m_type;
         m_path = path.m_path;
         m_absolute = path.m_absolute;
+        m_smb = path.m_smb;
         return *this;
     }
 
@@ -249,6 +285,7 @@ public:
             m_type = path.m_type;
             m_path = std::move(path.m_path);
             m_absolute = path.m_absolute;
+            m_smb = path.m_smb;
         }
         return *this;
     }
@@ -355,6 +392,7 @@ protected:
     path_type m_type;
     std::vector<std::string> m_path;
     bool m_absolute;
+    bool m_smb; // Unused, except for on Windows
 };
 
 inline bool create_directory(const path& p) {
@@ -371,10 +409,10 @@ inline bool create_directories(const path& p) {
 #else
     if (create_directory(p.str().c_str()))
         return true;
-  
+
     if (p.empty())
         return false;
-    
+
     if (errno == ENOENT) {
         if (create_directory(p.parent_path()))
             return mkdir(p.str().c_str(), S_IRWXU) == 0;
