@@ -225,6 +225,10 @@ public:
         return oss.str();
     }
 
+    inline operator std::string(){
+        return this->str();
+    }
+
     void set(const std::string &str, path_type type = native_path) {
         m_type = type;
         if (type == windows_path) {
