@@ -225,6 +225,10 @@ public:
         return oss.str();
     }
 
+    std::string string() const {
+        return str();
+    }
+
     void set(const std::string &str, path_type type = native_path) {
         m_type = type;
         if (type == windows_path) {
@@ -429,6 +433,14 @@ inline bool create_directories(const path& p) {
     }
     return false;
 #endif
+}
+
+inline bool exists(const path& p) {
+    return p.exists();
+}
+
+inline bool is_directory(const path& p) {
+    return p.is_directory();
 }
 
 NAMESPACE_END(filesystem)
