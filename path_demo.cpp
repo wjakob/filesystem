@@ -25,10 +25,26 @@ int main(int argc, char **argv) {
     cout << "some/path.ext:operator==() (unequal) = " << (path("some/path.ext") == path("another/path.ext")) << endl;
 
     cout << "nonexistant:exists = " << path("nonexistant").exists() << endl;
+    try
+    {
+        cout << "nonexistant:file_size = " << path("nonexistant").file_size() << endl;
+    }
+    catch(std::exception &e)
+    {
+        cout << "<file does not exist>" << endl;
+    }
     cout << "nonexistant:is_file = " << path("nonexistant").is_file() << endl;
     cout << "nonexistant:is_directory = " << path("nonexistant").is_directory() << endl;
     cout << "nonexistant:filename = " << path("nonexistant").filename() << endl;
     cout << "nonexistant:extension = " << path("nonexistant").extension() << endl;
+    try
+    {
+        cout << "filesystem/path.h:file_size = " << path("filesystem/path.h").file_size() << endl;
+    }
+    catch(std::exception &e)
+    {
+        cout << "<file does not exist>" << endl;
+    }
     cout << "filesystem/path.h:exists = " << path("filesystem/path.h").exists() << endl;
     cout << "filesystem/path.h:is_file = " << path("filesystem/path.h").is_file() << endl;
     cout << "filesystem/path.h:is_directory = " << path("filesystem/path.h").is_directory() << endl;
@@ -36,6 +52,14 @@ int main(int argc, char **argv) {
     cout << "filesystem/path.h:extension = " << path("filesystem/path.h").extension() << endl;
     cout << "filesystem/path.h:make_absolute = " << path("filesystem/path.h").make_absolute() << endl;
     cout << "../filesystem:exists = " << path("../filesystem").exists() << endl;
+    try
+    {
+        cout << "../filesystem:file_size = " << path("../filesystem").file_size() << endl;
+    }
+    catch(std::exception &e)
+    {
+        cout << "<file does not exist>" << endl;
+    }
     cout << "../filesystem:is_file = " << path("../filesystem").is_file() << endl;
     cout << "../filesystem:is_directory = " << path("../filesystem").is_directory() << endl;
     cout << "../filesystem:extension = " << path("../filesystem").extension() << endl;
