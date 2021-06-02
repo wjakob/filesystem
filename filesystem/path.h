@@ -260,7 +260,9 @@ public:
                 m_absolute = true;
                 m_smb = true;
             // Special-case handling of absolute local paths, which start with the drive letter and a colon "X:\"
-            } else if (tmp.length() >= 3 && std::isalpha(tmp[0]) && tmp[1] == ':' && (tmp[2] == '\\' || tmp[2] == '/')) {
+            // So that UTF-8 works, do not call std::isalpha if the high bit is set, as that causes an assert on Windows.
+            } else if (tmp.length() >= 3 && ((unsigned char)tmp[0] < 0x80) && std::isalpha(tmp[0]) &&
+                       tmp[1] == ':' && (tmp[2] == '\\' || tmp[2] == '/')) {
                 m_path = {tmp.substr(0, 2)};
                 tmp.erase(0, 3);
                 m_absolute = true;
