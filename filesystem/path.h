@@ -62,9 +62,9 @@ public:
         : m_type(path.m_type), m_path(std::move(path.m_path)),
           m_absolute(path.m_absolute), m_smb(path.m_smb) {}
 
-    path(const char *string) { set(string); }
+    path(const char *string) : m_smb(false) { set(string); }
 
-    path(const std::string &string) { set(string); }
+    path(const std::string &string) : m_smb(false) { set(string); }
 
 #if defined(_WIN32)
     path(const std::wstring &wstring) { set(wstring); }
