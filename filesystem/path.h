@@ -32,6 +32,10 @@
 # include <linux/limits.h>
 #endif
 
+#if defined(__XTENSA__)
+# include <limits.h>
+#endif
+
 NAMESPACE_BEGIN(filesystem)
 
 /**
