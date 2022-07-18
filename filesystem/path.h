@@ -62,9 +62,9 @@ public:
         : m_type(path.m_type), m_path(std::move(path.m_path)),
           m_absolute(path.m_absolute), m_smb(path.m_smb) {}
 
-    path(const char *string) { set(string); }
+    path(const char *string) : m_smb(false) { set(string); }
 
-    path(const std::string &string) { set(string); }
+    path(const std::string &string) : m_smb(false) { set(string); }
 
 #if defined(_WIN32)
     path(const std::wstring &wstring) { set(wstring); }
@@ -260,7 +260,9 @@ public:
                 m_absolute = true;
                 m_smb = true;
             // Special-case handling of absolute local paths, which start with the drive letter and a colon "X:\"
-            } else if (tmp.length() >= 3 && std::isalpha(tmp[0]) && tmp[1] == ':' && (tmp[2] == '\\' || tmp[2] == '/')) {
+            // So that UTF-8 works, do not call std::isalpha if the high bit is set, as that causes an assert on Windows.
+            } else if (tmp.length() >= 3 && ((unsigned char)tmp[0] < 0x80) && std::isalpha(tmp[0]) &&
+                       tmp[1] == ':' && (tmp[2] == '\\' || tmp[2] == '/')) {
                 m_path = {tmp.substr(0, 2)};
                 tmp.erase(0, 3);
                 m_absolute = true;
